@@ -1,0 +1,75 @@
+global:
+  default_check_cron: "0 */6 * * *"
+  timezone: UTC
+
+remediation:
+  enabled: true
+
+notification:
+  enabled: false
+  hook_url: ""
+  hook_method: POST
+  hook_headers: {}
+  hook_timeout_seconds: 10
+
+clusters:
+  - name: production
+    check_cron: "0 */6 * * *"
+    k3s_kubeconfig_path: /etc/rancher/k3s/k3s.yaml
+    k3s_token_path: /var/lib/rancher/k3s/server/node-token
+    ssh_key: default
+    ssh_user: deploy
+    ssh_port: 22
+    remediation:
+      enabled: true
+      max_nodes_per_cycle: 1
+      failure_threshold: 2
+      dry_run: true
+    commands:
+      install_script: k3s-install.sh
+      remote_install_script: /tmp/k3s-install.sh
+      command_delay_seconds: 5
+      uninstall:
+        - sudo test -x /usr/local/bin/k3s-uninstall.sh && sudo /usr/local/bin/k3s-uninstall.sh || true
+        - sudo test -x /usr/local/bin/k3s-agent-uninstall.sh && sudo /usr/local/bin/k3s-agent-uninstall.sh || true
+      master_install: >-
+        curl -sfL https://get.k3s.io | sudo env K3S_TOKEN={{K3S_TOKEN}} INSTALL_K3S_VERSION={{K3S_VERSION}} INSTALL_K3S_FORCE_RESTART=true sh -s - server --server {{BOOTSTRAP_SERVER}}
+      worker_install: >-
+        curl -sfL https://get.k3s.io | sudo env K3S_URL={{BOOTSTRAP_SERVER}} K3S_TOKEN={{K3S_TOKEN}} INSTALL_K3S_VERSION={{K3S_VERSION}} INSTALL_K3S_FORCE_RESTART=true sh -
+      pre_remediation: []
+      post_remediation: []
+    nodes:
+      - name: master-01
+        host: 192.168.1.101
+        role: master
+      - name: master-02
+        host: 192.168.1.102
+        role: master
+
+  - name: staging
+    check_cron: "0 */6 * * 1-5"
+    k3s_kubeconfig_path: /etc/rancher/k3s/k3s.yaml
+    k3s_token_path: /var/lib/rancher/k3s/server/node-token
+    ssh_key: default
+    ssh_user: deploy
+    ssh_port: 22
+    remediation:
+      enabled: true
+      max_nodes_per_cycle: 1
+      failure_threshold: 2
+      dry_run: true
+    commands:
+      install_script: k3s-install.sh
+      remote_install_script: /tmp/k3s-install.sh
+      command_delay_seconds: 5
+      uninstall:
+        - sudo test -x /usr/local/bin/k3s-uninstall.sh && sudo /usr/local/bin/k3s-uninstall.sh || true
+        - sudo test -x /usr/local/bin/k3s-agent-uninstall.sh && sudo /usr/local/bin/k3s-agent-uninstall.sh || true
+      master_install: >-
+        curl -sfL https://get.k3s.io | sudo env K3S_TOKEN={{K3S_TOKEN}} INSTALL_K3S_VERSION={{K3S_VERSION}} INSTALL_K3S_FORCE_RESTART=true sh -s - server --server {{BOOTSTRAP_SERVER}}
+      worker_install: >-
+        curl -sfL https://get.k3s.io | sudo env K3S_URL={{BOOTSTRAP_SERVER}} K3S_TOKEN={{K3S_TOKEN}} INSTALL_K3S_VERSION={{K3S_VERSION}} INSTALL_K3S_FORCE_RESTART=true sh -
+    nodes:
+      - name: staging-node-01
+        host: 192.168.10.11
+        role: master

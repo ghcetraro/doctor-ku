@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "doctor-ku.fullname" . }}-scripts
+  labels:
+    {{- include "doctor-ku.labels" . | nindent 4 }}
+data:
+  k3s-install.sh: |
+{{ .Files.Get "k3s-install.sh" | indent 4 }}

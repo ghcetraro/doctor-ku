@@ -1,0 +1,67 @@
+{{- if .Values.cron.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "doctor-ku.fullname" . }}
+  labels:
+    {{- include "doctor-ku.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.cron.schedule | quote }}
+  timeZone: {{ .Values.config.global.timezone | default "America/Argentina/Buenos_Aires" | quote }}
+  concurrencyPolicy: {{ .Values.cron.concurrencyPolicy | default "Forbid" }}
+  startingDeadlineSeconds: {{ .Values.cron.startingDeadlineSeconds | default 300 }}
+  successfulJobsHistoryLimit: {{ .Values.cron.successfulJobsHistoryLimit | default 3 }}
+  failedJobsHistoryLimit: {{ .Values.cron.failedJobsHistoryLimit | default 3 }}
+  jobTemplate:
+    metadata:
+      labels:
+        {{- include "doctor-ku.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: cronjob
+    spec:
+      backoffLimit: {{ .Values.cron.backoffLimit | default 1 }}
+      activeDeadlineSeconds: {{ .Values.cron.activeDeadlineSeconds | default 1800 }}
+      ttlSecondsAfterFinished: {{ .Values.cron.ttlSecondsAfterFinished | default 86400 }}
+      template:
+        metadata:
+          labels:
+            {{- include "doctor-ku.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: cronjob
+          annotations:
+            checksum/config: {{ .Values.config | toYaml | sha256sum }}
+            checksum/scripts: {{ .Files.Get "k3s-install.sh" | sha256sum }}
+        spec:
+          restartPolicy: {{ .Values.cron.restartPolicy | default "OnFailure" }}
+          {{- if .Values.base.imagePullSecrets.enabled }}
+          imagePullSecrets:
+          - name: {{ .Values.base.imagePullSecrets.name | default "docker-registry" }}
+          {{- end }}
+          containers:
+          - name: doctor-ku
+            image: {{ .Values.base.deployment.ecr }}/{{ .Values.base.deployment.image }}:{{ .Values.base.deployment.tag }}
+            imagePullPolicy: {{ .Values.base.deployment.pullPolicy | default "IfNotPresent" }}
+            command: ["python", "-m", "app.runner"]
+            env:
+              {{- include "doctor-ku.containerEnv" . | nindent 14 }}
+              {{- if .Values.metrics.enabled }}
+              - name: METRICS_PUSH_URL
+                value: {{ printf "http://%s:%v/internal/update" (include "doctor-ku.fullname" .) .Values.metrics.service.port | quote }}
+              {{- end }}
+            volumeMounts:
+              {{- include "doctor-ku.volumeMounts" . | nindent 14 }}
+            resources:
+              {{- toYaml (.Values.cron.resources | default .Values.base.deployment.resources) | nindent 14 }}
+          volumes:
+            {{- include "doctor-ku.volumes" . | nindent 12 }}
+          {{- with .Values.base.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.base.affinity }}
+          affinity:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.base.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+{{- end }}

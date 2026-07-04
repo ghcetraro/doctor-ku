@@ -1,0 +1,10 @@
+.env
+.venv/
+venv/
+__pycache__/
+*.pyc
+secrets/
+helm/secrets.yaml
+*.pem
+*.key
+.DS_Store

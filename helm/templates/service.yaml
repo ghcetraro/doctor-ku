@@ -1,0 +1,24 @@
+{{- if and .Values.base.deployment.enabled .Values.base.deployment.service.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "doctor-ku.fullname" . }}
+  labels:
+    {{- include "doctor-ku.labels" . | nindent 4 }}
+  {{- if .Values.base.prometheusAnnotations.enabled }}
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: {{ .Values.base.deployment.port | quote }}
+    prometheus.io/path: "/metrics"
+  {{- end }}
+spec:
+  type: {{ .Values.base.deployment.type }}
+  ports:
+    - port: {{ .Values.base.deployment.port }}
+      targetPort: {{ .Values.base.deployment.containerPort | default .Values.base.deployment.port }}
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "doctor-ku.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: server
+{{- end }}

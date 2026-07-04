@@ -1,0 +1,46 @@
+---
+base:
+  deployment:
+    enabled: false
+    service:
+      enabled: false
+    ingress:
+      enabled: false
+
+  prometheusAnnotations:
+    enabled: false
+
+cron:
+  enabled: true
+  schedule: "0 */6 * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  backoffLimit: 1
+  activeDeadlineSeconds: 1800
+  ttlSecondsAfterFinished: 86400
+  restartPolicy: OnFailure
+
+persistence:
+  enabled: true
+  size: 128Mi
+  mountPath: /data
+  stateFile: /data/state.json
+
+metrics:
+  enabled: true
+  filePath: /data/metrics.prom
+  service:
+    port: 8080
+  ingress:
+    enabled: false
+  prometheusAnnotations:
+    enabled: true
+  resources:
+    limits:
+      cpu: 200m
+      memory: 128Mi
+    requests:
+      cpu: 25m
+      memory: 32Mi

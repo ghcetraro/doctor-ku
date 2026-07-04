@@ -1,0 +1,61 @@
+{{- if .Values.metrics.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "doctor-ku.fullname" . }}-metrics
+  labels:
+    {{- include "doctor-ku.labels" . | nindent 4 }}
+    app.kubernetes.io/component: metrics
+spec:
+  replicas: 1
+  revisionHistoryLimit: {{ .Values.base.deployment.revisionHistoryLimit | default 0 }}
+  selector:
+    matchLabels:
+      {{- include "doctor-ku.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: metrics
+  template:
+    metadata:
+      labels:
+        {{- include "doctor-ku.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: metrics
+    spec:
+      {{- if .Values.base.imagePullSecrets.enabled }}
+      imagePullSecrets:
+      - name: {{ .Values.base.imagePullSecrets.name | default "docker-registry" }}
+      {{- end }}
+      containers:
+      - name: metrics-exporter
+        image: {{ .Values.base.deployment.ecr }}/{{ .Values.base.deployment.image }}:{{ .Values.base.deployment.tag }}
+        imagePullPolicy: {{ .Values.base.deployment.pullPolicy | default "IfNotPresent" }}
+        command: ["python", "-m", "app.metrics_exporter"]
+        ports:
+        - name: http
+          containerPort: {{ .Values.metrics.service.port }}
+        env:
+        - name: TZ
+          value: {{ .Values.config.global.timezone | default "America/Argentina/Buenos_Aires" | quote }}
+        - name: METRICS_PORT
+          value: {{ .Values.metrics.service.port | quote }}
+        - name: METRICS_FILE
+          value: {{ .Values.metrics.filePath | quote }}
+        volumeMounts:
+        - name: metrics-data
+          mountPath: /data
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 15
+          periodSeconds: 30
+        resources:
+          {{- toYaml .Values.metrics.resources | nindent 10 }}
+      volumes:
+      - name: metrics-data
+        emptyDir: {}
+{{- end }}

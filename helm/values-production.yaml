@@ -1,0 +1,135 @@
+---
+base:
+  deployment:
+    enabled: false
+    replicaCount: 1
+    revisionHistoryLimit: 0
+    logLevel: INFO
+    ecr: "ghcr.io/your-org"
+    image: doctor-ku
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+    type: ClusterIP
+    port: 8080
+    containerPort: 8080
+    service:
+      enabled: false
+    ingress:
+      enabled: false
+      className: traefik
+      host: doctor-ku.example.com
+      tls: true
+      annotations: {}
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 256Mi
+    env: {}
+
+  imagePullSecrets:
+    enabled: false
+    create: false
+    name: docker-registry
+
+  prometheusAnnotations:
+    enabled: false
+
+cron:
+  enabled: true
+  schedule: "0 */6 * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  backoffLimit: 1
+  activeDeadlineSeconds: 1800
+  ttlSecondsAfterFinished: 86400
+  restartPolicy: OnFailure
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+persistence:
+  enabled: true
+  size: 128Mi
+  mountPath: /data
+  stateFile: /data/state.json
+  storageClass: ""
+
+metrics:
+  enabled: true
+  filePath: /data/metrics.prom
+  service:
+    port: 8080
+  ingress:
+    enabled: true
+    className: traefik
+    host: doctor-ku.example.com
+    tls: true
+    annotations: {}
+  prometheusAnnotations:
+    enabled: true
+  resources:
+    limits:
+      cpu: 200m
+      memory: 128Mi
+    requests:
+      cpu: 25m
+      memory: 32Mi
+
+config:
+  global:
+    default_check_cron: "0 */6 * * *"
+    timezone: UTC
+  notification:
+    enabled: false
+    hook_url: ""
+    hook_method: POST
+    hook_headers: {}
+    hook_timeout_seconds: 10
+  clusters:
+    - name: production
+      check_cron: "0 */6 * * *"
+      k3s_kubeconfig_path: /etc/rancher/k3s/k3s.yaml
+      k3s_token_path: /var/lib/rancher/k3s/server/node-token
+      ssh_key: default
+      ssh_user: deploy
+      ssh_port: 22
+      remediation:
+        enabled: true
+        max_nodes_per_cycle: 1
+        failure_threshold: 2
+        dry_run: false
+      commands:
+        install_script: k3s-install.sh
+        remote_install_script: /tmp/k3s-install.sh
+        command_delay_seconds: 5
+        uninstall:
+          - sudo test -x /usr/local/bin/k3s-uninstall.sh && sudo /usr/local/bin/k3s-uninstall.sh || true
+          - sudo test -x /usr/local/bin/k3s-agent-uninstall.sh && sudo /usr/local/bin/k3s-agent-uninstall.sh || true
+        master_install: >-
+          curl -sfL https://get.k3s.io | sudo env K3S_TOKEN={{K3S_TOKEN}} INSTALL_K3S_VERSION={{K3S_VERSION}} INSTALL_K3S_FORCE_RESTART=true sh -s - server --server {{BOOTSTRAP_SERVER}}
+        worker_install: >-
+          curl -sfL https://get.k3s.io | sudo env K3S_URL={{BOOTSTRAP_SERVER}} K3S_TOKEN={{K3S_TOKEN}} INSTALL_K3S_VERSION={{K3S_VERSION}} INSTALL_K3S_FORCE_RESTART=true sh -
+        pre_remediation: []
+        post_remediation: []
+      nodes:
+        - name: master-01
+          host: 192.168.1.101
+          role: master
+        - name: master-02
+          host: 192.168.1.102
+          role: master
+        - name: master-03
+          host: 192.168.1.103
+          role: master
+
+# Claves SSH: usar helm/secrets.example.yaml -> secrets.yaml (no commitear)
+secrets: {}
