@@ -7,7 +7,7 @@ base:
     logLevel: DEBUG
     ecr: "ghcr.io/your-org"
     image: doctor-ku
-    tag: "1.0.0"
+    tag: "1.0.1"
     pullPolicy: IfNotPresent
     type: ClusterIP
     port: 8080
@@ -42,11 +42,12 @@ cron:
   schedule: "0 */6 * * 1-5"
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 3
-  concurrencyPolicy: Forbid
+  concurrencyPolicy: Replace
   startingDeadlineSeconds: 300
   backoffLimit: 1
   activeDeadlineSeconds: 1800
-  ttlSecondsAfterFinished: 86400
+  runTimeoutSeconds: 1500
+  ttlSecondsAfterFinished: 3600
   restartPolicy: OnFailure
   resources:
     limits:

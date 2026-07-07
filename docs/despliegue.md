@@ -34,13 +34,59 @@ cron:
   schedule: "0 */6 * * *"
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 3
-  concurrencyPolicy: Forbid
+  concurrencyPolicy: Replace
   activeDeadlineSeconds: 1800
+  runTimeoutSeconds: 1500
 ```
 
 - **successfulJobsHistoryLimit / failedJobsHistoryLimit**: conserva las últimas 3 ejecuciones
-- **concurrencyPolicy: Forbid**: no solapa ejecuciones
-- **activeDeadlineSeconds**: timeout máximo por Job
+- **concurrencyPolicy: Replace**: si un Job anterior sigue activo, el siguiente ciclo lo cancela y crea uno nuevo (evita bloqueos prolongados con `Forbid`)
+- **activeDeadlineSeconds**: timeout máximo del Job en Kubernetes (30 min)
+- **runTimeoutSeconds**: timeout interno de la app (`RUN_TIMEOUT_SECONDS`, 25 min), por debajo del deadline del Job
+
+El scheduler de Kubernetes elige cualquier nodo **Ready** y con recursos disponibles; no hay `nodeSelector` fijo.
+
+## Job colgado o sin logs (502 kubelet)
+
+Síntoma típico al ver logs:
+
+```text
+Get "https://<nodo>:10250/containerLogs/...": proxy error ... code 502: 502 Bad Gateway
+```
+
+Eso indica que el pod del Job estaba en un nodo con kubelet inaccesible. Con `concurrencyPolicy: Forbid`, el CronJob no crea ejecuciones nuevas mientras ese Job figure activo.
+
+### Recuperación inmediata
+
+```bash
+# Ver jobs activos
+kubectl -n doctor-ku get jobs -l app.kubernetes.io/name=doctor-ku
+
+# Borrar el job colgado (reemplazar por el nombre real)
+kubectl -n doctor-ku delete job doctor-ku-12345678
+
+# Si el pod queda en Terminating por nodo caído, forzar borrado
+kubectl -n doctor-ku delete pod doctor-ku-12345678-abcd1 --force --grace-period=0
+
+# Disparar una ejecución manual
+kubectl -n doctor-ku create job doctor-ku-manual-$(date +%s) --from=cronjob/doctor-ku
+```
+
+Si no hay logs, revisar en qué nodo estaba el pod:
+
+```bash
+kubectl -n doctor-ku get pod -l app.kubernetes.io/name=doctor-ku -o wide
+```
+
+### Prevención (ya en el chart)
+
+| Medida | Efecto |
+|--------|--------|
+| Scheduler por defecto | El pod va a cualquier nodo Ready con capacidad |
+| `concurrencyPolicy: Replace` | El cron siguiente reemplaza un Job atascado |
+| `activeDeadlineSeconds: 1800` | Kubernetes marca el Job como fallido tras 30 min |
+| `RUN_TIMEOUT_SECONDS: 1500` | La app sale antes que el deadline del Job |
+| `ttlSecondsAfterFinished: 3600` | Limpia Jobs terminados tras 1 h |
 
 ## Ejecución manual
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import signal
 import sys
 from typing import Any
 
@@ -22,12 +23,17 @@ from app.state_store import (
 logger = logging.getLogger(__name__)
 
 
+class RunTimeoutError(TimeoutError):
+    def __init__(self, timeout_seconds: int) -> None:
+        super().__init__(f"ejecucion supero el limite de {timeout_seconds}s")
+        self.timeout_seconds = timeout_seconds
+
+
 def _notify(coro: Any) -> None:
     asyncio.run(coro)
 
 
-def run_checks() -> int:
-    setup_logging(settings.log_level)
+def _run_checks_body() -> int:
     config = load_app_config()
     log_config_issues(config)
     sync_remediation_metrics(config.clusters)
@@ -72,10 +78,30 @@ def run_checks() -> int:
     return exit_code
 
 
+def run_checks() -> int:
+    setup_logging(settings.log_level)
+    timeout_seconds = settings.run_timeout_seconds
+    if timeout_seconds <= 0:
+        return _run_checks_body()
+
+    def _on_timeout(_signum: int, _frame: object) -> None:
+        raise RunTimeoutError(timeout_seconds)
+
+    previous_handler = signal.signal(signal.SIGALRM, _on_timeout)
+    signal.alarm(timeout_seconds)
+    try:
+        return _run_checks_body()
+    finally:
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, previous_handler)
+
+
 def main() -> None:
     exit_code = 1
     try:
         exit_code = run_checks()
+    except RunTimeoutError:
+        logger.error("runner timeout global=%ss", settings.run_timeout_seconds)
     except Exception:  # noqa: BLE001
         logger.exception("runner fallo")
     finally:

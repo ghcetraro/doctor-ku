@@ -3,6 +3,15 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 Versionado según [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.0.1] - 2026-07-07
+
+### Changed
+
+- CronJob: `concurrencyPolicy: Replace` para evitar bloqueos cuando un Job queda colgado
+- Timeout global de ejecución (`RUN_TIMEOUT_SECONDS`, default 1500 s)
+- `ttlSecondsAfterFinished` reducido a 3600 s (1 h)
+- Documentación de recuperación ante error 502 del kubelet
+
 ## [1.0.0] - 2026-07-04
 
 Primera release pública.
@@ -24,4 +33,5 @@ Primera release pública.
 
 - Claves SSH fuera del repositorio (`helm/secrets.yaml` gitignored)
 
+[1.0.1]: https://github.com/ghcetraro/doctor-ku/releases/tag/v1.0.1
 [1.0.0]: https://github.com/ghcetraro/doctor-ku/releases/tag/v1.0.0

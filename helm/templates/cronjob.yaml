@@ -8,7 +8,7 @@ metadata:
 spec:
   schedule: {{ .Values.cron.schedule | quote }}
   timeZone: {{ .Values.config.global.timezone | default "America/Argentina/Buenos_Aires" | quote }}
-  concurrencyPolicy: {{ .Values.cron.concurrencyPolicy | default "Forbid" }}
+  concurrencyPolicy: {{ .Values.cron.concurrencyPolicy | default "Replace" }}
   startingDeadlineSeconds: {{ .Values.cron.startingDeadlineSeconds | default 300 }}
   successfulJobsHistoryLimit: {{ .Values.cron.successfulJobsHistoryLimit | default 3 }}
   failedJobsHistoryLimit: {{ .Values.cron.failedJobsHistoryLimit | default 3 }}
@@ -20,7 +20,7 @@ spec:
     spec:
       backoffLimit: {{ .Values.cron.backoffLimit | default 1 }}
       activeDeadlineSeconds: {{ .Values.cron.activeDeadlineSeconds | default 1800 }}
-      ttlSecondsAfterFinished: {{ .Values.cron.ttlSecondsAfterFinished | default 86400 }}
+      ttlSecondsAfterFinished: {{ .Values.cron.ttlSecondsAfterFinished | default 3600 }}
       template:
         metadata:
           labels:
@@ -31,6 +31,7 @@ spec:
             checksum/scripts: {{ .Files.Get "k3s-install.sh" | sha256sum }}
         spec:
           restartPolicy: {{ .Values.cron.restartPolicy | default "OnFailure" }}
+          terminationGracePeriodSeconds: {{ .Values.cron.terminationGracePeriodSeconds | default 30 }}
           {{- if .Values.base.imagePullSecrets.enabled }}
           imagePullSecrets:
           - name: {{ .Values.base.imagePullSecrets.name | default "docker-registry" }}

@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     ssh_keys_dir: Path = Path("/secrets/ssh")
     scripts_dir: Path = Path("/scripts")
     log_level: str = "INFO"
+    run_timeout_seconds: int = 1500
 
 
 settings = Settings()

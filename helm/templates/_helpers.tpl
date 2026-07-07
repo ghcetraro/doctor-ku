@@ -64,6 +64,8 @@ Variables de entorno comunes del contenedor
   value: {{ .Values.config.global.timezone | default "America/Argentina/Buenos_Aires" | quote }}
 - name: STATE_PATH
   value: {{ .Values.persistence.stateFile | default "/data/state.json" | quote }}
+- name: RUN_TIMEOUT_SECONDS
+  value: {{ .Values.cron.runTimeoutSeconds | default 1500 | quote }}
 {{- range $key, $value := .Values.base.deployment.env }}
 - name: {{ $key }}
   value: {{ $value | quote }}
