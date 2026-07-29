@@ -1,0 +1,14 @@
+---
+description: Convenciones Terraform del proyecto
+globs: **/*.tf
+alwaysApply: false
+---
+
+# Terraform
+
+- Ejecutar `terraform fmt` antes de commitear.
+- Variables con descripción en `variables.tf`; outputs documentados en `output.tf`.
+- No hardcodear credenciales ni IDs sensibles; usar variables o data sources.
+- Mantener providers y versiones en `providers.tf` o bloque `terraform`.
+- Preferir módulos reutilizables sobre duplicar recursos.
+- Respetar la estructura de archivos ya existente en el repo.

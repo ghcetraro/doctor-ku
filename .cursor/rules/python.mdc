@@ -1,0 +1,13 @@
+---
+description: Convenciones Python del proyecto
+globs: **/*.py
+alwaysApply: false
+---
+
+# Python
+
+- Respetar la versión mínima de Python declarada en el proyecto.
+- Usar type hints en funciones públicas cuando el repo ya los adopta.
+- No commitear secretos; usar variables de entorno o `.env.example`.
+- Seguir el linter y tests definidos en CI (ruff, pytest, etc.).
+- Mantener dependencias en los archivos de lock/requirements del proyecto.

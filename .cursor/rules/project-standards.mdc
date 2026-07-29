@@ -1,0 +1,13 @@
+---
+description: Estándares generales del proyecto
+alwaysApply: true
+---
+
+# Estándares generales
+
+- Minimizar el alcance de los cambios; no modificar código no relacionado.
+- Seguir las convenciones existentes del repositorio (nombres, estructura, estilo).
+- No commitear secretos, credenciales ni archivos `.env` con datos reales.
+- Preferir cambios pequeños y revisables sobre refactors grandes no solicitados.
+- Actualizar documentación solo cuando el cambio lo requiera.
+- Responder y documentar en español cuando el proyecto lo use.

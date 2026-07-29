@@ -1,0 +1,12 @@
+---
+description: Convenciones Kubernetes y Helm del proyecto
+globs: "{**/helm/**,**/*.yaml,**/*.yml}"
+alwaysApply: false
+---
+
+# Kubernetes / Helm
+
+- Validar manifests con las herramientas del proyecto antes de commitear.
+- No hardcodear secretos en YAML; usar Secrets, ExternalSecrets o variables.
+- Mantener `values.yaml` con defaults seguros; overrides por entorno en archivos separados.
+- Documentar cambios que afecten despliegue en README o docs del repo.
